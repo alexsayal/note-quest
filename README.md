@@ -17,3 +17,5 @@ python3 -m http.server 8765 --directory note-quest
 - **Sound feedback**: every note plays its real pitch via Web Audio synthesis (bowed-string or flute timbre), correct answers get a sparkle arpeggio, wrong answers get a gentle buzz followed by the correct pitch, and 2–3 star rounds end with a fanfare + confetti.
 - **Note names**: letters (C D E…) or solfège (Do Re Mi…).
 - **Kid-friendly game loop**: progress bar, streak multiplier, floating emoji, praise messages, fox mascot.
+
+Clef shapes are public-domain vector paths from Wikimedia Commons (GClef.svg, FClef.svg, CClef.svg).
