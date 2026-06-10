@@ -129,27 +129,40 @@
 <!-- ============ HOME SCREEN ============ -->
 <div class="screen active" id="screen-home">
   <h1 class="logo">🎻 Note Quest</h1>
-  <p class="tagline">Learn to read music notes — one star at a time!</p>
+  <p class="tagline" id="tagline"></p>
 
   <div class="panel">
-    <h2>Instrument</h2>
+    <h2 id="h-instrument"></h2>
     <div class="choice-row" id="instrument-row"></div>
   </div>
 
   <div class="panel">
-    <h2>Note names</h2>
+    <h2 id="h-naming"></h2>
     <div class="choice-row" id="naming-row">
       <button class="chip" data-naming="letters"><span class="emoji">🔤</span> C D E F G A B</button>
-      <button class="chip" data-naming="solfege"><span class="emoji">🎵</span> Do Re Mi Fa Sol La Si</button>
+      <button class="chip" data-naming="solfege"><span class="emoji">🎵</span> <span id="solfege-label"></span></button>
     </div>
   </div>
 
   <div class="panel">
-    <h2>Level</h2>
+    <h2 id="h-mode"></h2>
+    <div class="choice-row" id="mode-row"></div>
+  </div>
+
+  <div class="panel">
+    <h2 id="h-level"></h2>
     <div class="choice-row" id="level-row"></div>
   </div>
 
-  <button class="big-btn" id="btn-start">Play! ▶</button>
+  <div class="panel">
+    <h2 id="h-lang"></h2>
+    <div class="choice-row" id="lang-row">
+      <button class="chip" data-lang="en"><span class="emoji">🇬🇧</span> English</button>
+      <button class="chip" data-lang="pt"><span class="emoji">🇵🇹</span> Português</button>
+    </div>
+  </div>
+
+  <button class="big-btn" id="btn-start"></button>
 </div>
 
 <!-- ============ GAME SCREEN ============ -->
@@ -195,7 +208,10 @@
 ===================================================================== */
 
 const LETTERS  = ["C", "D", "E", "F", "G", "A", "B"];
-const SOLFEGE  = ["Do", "Re", "Mi", "Fa", "Sol", "La", "Si"];
+const SOLFEGE  = {
+  en: ["Do", "Re", "Mi", "Fa", "Sol", "La", "Si"],
+  pt: ["Dó", "Ré", "Mi", "Fá", "Sol", "Lá", "Si"],
+};
 const LETTER_SEMITONES = [0, 2, 4, 5, 7, 9, 11]; // C D E F G A B
 
 function makeNote(letter, octave) {
@@ -233,48 +249,94 @@ function notes(str) {
    Violin gets its idiomatic progression; others get a generic one
    adapted to their clef. Easy to extend with new instruments.
 ===================================================================== */
+/* Level names/hints are keys into LEVEL_I18N; levels with hint "notes"
+   show their pool's note names in the current naming & language. */
 const INSTRUMENTS = {
   violin: {
-    label: "Violin", emoji: "🎻", clef: "treble", tone: "string",
+    label: { en: "Violin", pt: "Violino" }, emoji: "🎻", clef: "treble", tone: "string",
     levels: [
-      { name: "Open Strings",  hint: "G – D – A – E",        pool: notes("G3 D4 A4 E5"),                    rounds: 8  },
-      { name: "Line Notes",    hint: "Notes on the lines",    pool: notes("E4 G4 B4 D5 F5"),                 rounds: 10 },
-      { name: "Space Notes",   hint: "Notes in the spaces",   pool: notes("F4 A4 C5 E5"),                    rounds: 10 },
-      { name: "Full Staff",    hint: "Lines + spaces",        pool: notes("E4 F4 G4 A4 B4 C5 D5 E5 F5"),     rounds: 12 },
-      { name: "Super Sky",     hint: "High & low ledger",     pool: notes("G3 A3 B3 C4 D4 G5 A5 B5 C6 E4 F5"), rounds: 12 },
+      { name: "open",   hint: "notes",  pool: notes("G3 D4 A4 E5"),                      rounds: 8  },
+      { name: "lines",  hint: "lines",  pool: notes("E4 G4 B4 D5 F5"),                   rounds: 10 },
+      { name: "spaces", hint: "spaces", pool: notes("F4 A4 C5 E5"),                      rounds: 10 },
+      { name: "full",   hint: "full",   pool: notes("E4 F4 G4 A4 B4 C5 D5 E5 F5"),       rounds: 12 },
+      { name: "sky",    hint: "sky",    pool: notes("G3 A3 B3 C4 D4 G5 A5 B5 C6 E4 F5"), rounds: 12 },
     ],
   },
   viola: {
-    label: "Viola", emoji: "🎻", clef: "alto", tone: "string",
+    label: { en: "Viola", pt: "Viola" }, emoji: "🎻", clef: "alto", tone: "string",
     levels: [
-      { name: "Open Strings",  hint: "C – G – D – A",        pool: notes("C3 G3 D4 A4"),                    rounds: 8  },
-      { name: "Line Notes",    hint: "Notes on the lines",    pool: notes("F3 A3 C4 E4 G4"),                 rounds: 10 },
-      { name: "Space Notes",   hint: "Notes in the spaces",   pool: notes("G3 B3 D4 F4"),                    rounds: 10 },
-      { name: "Full Staff",    hint: "Lines + spaces",        pool: notes("F3 G3 A3 B3 C4 D4 E4 F4 G4"),     rounds: 12 },
-      { name: "Super Sky",     hint: "High & low ledger",     pool: notes("C3 D3 E3 A4 B4 C5 F3 G4"),        rounds: 12 },
+      { name: "open",   hint: "notes",  pool: notes("C3 G3 D4 A4"),                      rounds: 8  },
+      { name: "lines",  hint: "lines",  pool: notes("F3 A3 C4 E4 G4"),                   rounds: 10 },
+      { name: "spaces", hint: "spaces", pool: notes("G3 B3 D4 F4"),                      rounds: 10 },
+      { name: "full",   hint: "full",   pool: notes("F3 G3 A3 B3 C4 D4 E4 F4 G4"),       rounds: 12 },
+      { name: "sky",    hint: "sky",    pool: notes("C3 D3 E3 A4 B4 C5 F3 G4"),          rounds: 12 },
     ],
   },
   cello: {
-    label: "Cello", emoji: "🎻", clef: "bass", tone: "string",
+    label: { en: "Cello", pt: "Violoncelo" }, emoji: "🎻", clef: "bass", tone: "string",
     levels: [
-      { name: "Open Strings",  hint: "C – G – D – A",        pool: notes("C2 G2 D3 A3"),                    rounds: 8  },
-      { name: "Line Notes",    hint: "Notes on the lines",    pool: notes("G2 B2 D3 F3 A3"),                 rounds: 10 },
-      { name: "Space Notes",   hint: "Notes in the spaces",   pool: notes("A2 C3 E3 G3"),                    rounds: 10 },
-      { name: "Full Staff",    hint: "Lines + spaces",        pool: notes("G2 A2 B2 C3 D3 E3 F3 G3 A3"),     rounds: 12 },
-      { name: "Super Sky",     hint: "High & low ledger",     pool: notes("C2 D2 E2 F2 B3 C4 D4 G2 A3"),     rounds: 12 },
+      { name: "open",   hint: "notes",  pool: notes("C2 G2 D3 A3"),                      rounds: 8  },
+      { name: "lines",  hint: "lines",  pool: notes("G2 B2 D3 F3 A3"),                   rounds: 10 },
+      { name: "spaces", hint: "spaces", pool: notes("A2 C3 E3 G3"),                      rounds: 10 },
+      { name: "full",   hint: "full",   pool: notes("G2 A2 B2 C3 D3 E3 F3 G3 A3"),       rounds: 12 },
+      { name: "sky",    hint: "sky",    pool: notes("C2 D2 E2 F2 B3 C4 D4 G2 A3"),       rounds: 12 },
     ],
   },
   flute: {
-    label: "Flute", emoji: "🪈", clef: "treble", tone: "flute",
+    label: { en: "Flute", pt: "Flauta" }, emoji: "🪈", clef: "treble", tone: "flute",
     levels: [
-      { name: "First Notes",   hint: "B – A – G",            pool: notes("G4 A4 B4"),                       rounds: 8  },
-      { name: "Line Notes",    hint: "Notes on the lines",    pool: notes("E4 G4 B4 D5 F5"),                 rounds: 10 },
-      { name: "Space Notes",   hint: "Notes in the spaces",   pool: notes("F4 A4 C5 E5"),                    rounds: 10 },
-      { name: "Full Staff",    hint: "Lines + spaces",        pool: notes("E4 F4 G4 A4 B4 C5 D5 E5 F5"),     rounds: 12 },
-      { name: "Super Sky",     hint: "High ledger notes",     pool: notes("G5 A5 B5 C6 D6 E5 F5"),           rounds: 12 },
+      { name: "first",  hint: "notes",  pool: notes("B4 A4 G4"),                         rounds: 8  },
+      { name: "lines",  hint: "lines",  pool: notes("E4 G4 B4 D5 F5"),                   rounds: 10 },
+      { name: "spaces", hint: "spaces", pool: notes("F4 A4 C5 E5"),                      rounds: 10 },
+      { name: "full",   hint: "full",   pool: notes("E4 F4 G4 A4 B4 C5 D5 E5 F5"),       rounds: 12 },
+      { name: "sky",    hint: "sky",    pool: notes("G5 A5 B5 C6 D6 E5 F5"),             rounds: 12 },
     ],
   },
 };
+
+const LEVEL_I18N = {
+  open:   { en: "Open Strings", pt: "Cordas Soltas" },
+  first:  { en: "First Notes",  pt: "Primeiras Notas" },
+  lines:  { en: "Line Notes",   pt: "Notas nas Linhas" },
+  spaces: { en: "Space Notes",  pt: "Notas nos Espaços" },
+  full:   { en: "Full Staff",   pt: "Pauta Completa" },
+  sky:    { en: "Super Sky",    pt: "Super Céu" },
+};
+const HINT_I18N = {
+  lines:  { en: "Notes on the lines",  pt: "Nas linhas da pauta" },
+  spaces: { en: "Notes in the spaces", pt: "Nos espaços da pauta" },
+  full:   { en: "Lines + spaces",      pt: "Linhas + espaços" },
+  sky:    { en: "High & low notes",    pt: "Notas agudas e graves" },
+};
+
+/* UI strings */
+const I18N = {
+  en: {
+    tagline: "Learn to read music notes — one star at a time!",
+    instrument: "Instrument", naming: "Note names", mode: "Mode", level: "Level", language: "Language",
+    play: "Play! ▶", hear: "🔊 Hear the note again", again: "Play again 🔁", menu: "Menu 🏠",
+    modePractice: ["Practice", "🎯 Tricky notes come back more often"],
+    modeQuiz: ["Quiz", "📋 All notes mixed evenly"],
+    praise: ["Bravo! 🎉", "Perfect! 🌟", "You got it! 🎶", "Amazing! ✨", "Super! 🦊", "Yes! 💜"],
+    oops: ["Almost! 💪", "Oops! 🌈", "Keep going! 🚀", "Nice try! 🍀"],
+    itWas: n => `It was ${n}.`,
+    resultTitles: ["Keep practicing!", "Good effort!", "Great job!", "Fantastic!"],
+    resultSub: (c, r, s) => `${c} / ${r} correct — ${s} points`,
+  },
+  pt: {
+    tagline: "Aprende a ler as notas musicais — uma estrela de cada vez!",
+    instrument: "Instrumento", naming: "Nomes das notas", mode: "Modo", level: "Nível", language: "Idioma",
+    play: "Jogar! ▶", hear: "🔊 Ouvir a nota outra vez", again: "Jogar outra vez 🔁", menu: "Menu 🏠",
+    modePractice: ["Praticar", "🎯 As notas difíceis aparecem mais vezes"],
+    modeQuiz: ["Teste", "📋 Todas as notas aparecem por igual"],
+    praise: ["Bravo! 🎉", "Perfeito! 🌟", "Acertaste! 🎶", "Incrível! ✨", "Super! 🦊", "Boa! 💜"],
+    oops: ["Quase! 💪", "Ups! 🌈", "Continua! 🚀", "Boa tentativa! 🍀"],
+    itWas: n => `Era ${n}.`,
+    resultTitles: ["Continua a praticar!", "Bom esforço!", "Muito bem!", "Fantástico!"],
+    resultSub: (c, r, s) => `${c} / ${r} certas — ${s} pontos`,
+  },
+};
+function T() { return I18N[state.lang]; }
 
 /* =====================================================================
    STATE & PERSISTENCE (best stars per instrument+level)
@@ -282,6 +344,8 @@ const INSTRUMENTS = {
 const state = {
   instrument: "violin",
   naming: "letters",
+  mode: "practice",       // "practice" (adaptive) | "quiz" (even mix)
+  lang: (navigator.language || "").toLowerCase().startsWith("pt") ? "pt" : "en",
   level: 0,
   // in-round:
   round: 0, score: 0, streak: 0, correctCount: 0, current: null, prevMidi: null,
@@ -319,9 +383,12 @@ try {
   const prefs = JSON.parse(localStorage.getItem("noteQuestPrefs") || "{}");
   if (INSTRUMENTS[prefs.instrument]) state.instrument = prefs.instrument;
   if (prefs.naming === "solfege" || prefs.naming === "letters") state.naming = prefs.naming;
+  if (prefs.mode === "practice" || prefs.mode === "quiz") state.mode = prefs.mode;
+  if (prefs.lang === "en" || prefs.lang === "pt") state.lang = prefs.lang;
 } catch (e) {}
 function savePrefs() {
-  localStorage.setItem("noteQuestPrefs", JSON.stringify({ instrument: state.instrument, naming: state.naming }));
+  localStorage.setItem("noteQuestPrefs", JSON.stringify(
+    { instrument: state.instrument, naming: state.naming, mode: state.mode, lang: state.lang }));
 }
 
 /* =====================================================================
@@ -510,7 +577,7 @@ function labelNoteOnStaff(note, good) {
 const $ = id => document.getElementById(id);
 
 function nameOf(note) {
-  return state.naming === "solfege" ? SOLFEGE[note.letter] : LETTERS[note.letter];
+  return state.naming === "solfege" ? SOLFEGE[state.lang][note.letter] : LETTERS[note.letter];
 }
 
 function showScreen(id) {
@@ -538,7 +605,9 @@ function startGame() {
 function buildBag(lvl) {
   const bag = [];
   for (const n of lvl.pool) {
-    const copies = Math.min(3, Math.floor(weightsStore.get(state.instrument, n.midi)));
+    // quiz mode assesses with a perfectly even mix; practice mode adapts
+    const copies = state.mode === "quiz" ? 1
+      : Math.min(3, Math.floor(weightsStore.get(state.instrument, n.midi)));
     for (let c = 0; c < copies; c++) bag.push(n);
   }
   for (let i = bag.length - 1; i > 0; i--) {
@@ -607,16 +676,13 @@ function refreshAnswerButtons() {
   const showAll = visible.size > 5; // close to full set? show all 7 in natural order
   document.querySelectorAll(".answer-btn").forEach(b => {
     const l = parseInt(b.dataset.letter);
-    b.textContent = state.naming === "solfege" ? SOLFEGE[l] : LETTERS[l];
+    b.textContent = state.naming === "solfege" ? SOLFEGE[state.lang][l] : LETTERS[l];
     b.style.display = (showAll || visible.has(l)) ? "" : "none";
     b.disabled = false;
     b.classList.remove("dimmed", "right", "wrong-pick");
   });
   $("answers").style.gridTemplateColumns = `repeat(${Math.min(showAll ? 7 : visible.size, 7)}, 1fr)`;
 }
-
-const PRAISE = ["Bravo! 🎉", "Perfect! 🌟", "You got it! 🎶", "Amazing! ✨", "Super! 🦊", "Yes! 💜"];
-const OOPS   = ["Almost! 💪", "Oops! Try the next one 🌈", "Keep going! 🚀", "Nice try! 🍀"];
 
 function answer(letter, btn) {
   if (state.locked) return;
@@ -644,7 +710,7 @@ function answer(letter, btn) {
     state.score += gained;
     $("score-val").textContent = state.score;
     $("streak-pill").textContent = state.streak >= 2 ? `🔥 x${state.streak}` : "";
-    banner.textContent = PRAISE[Math.floor(Math.random() * PRAISE.length)];
+    banner.textContent = T().praise[Math.floor(Math.random() * T().praise.length)];
     banner.classList.add("good");
     $("mascot").style.transform = "translateY(-10px) rotate(-8deg) scale(1.15)";
     floatNote();
@@ -653,7 +719,7 @@ function answer(letter, btn) {
   } else {
     state.streak = 0;
     $("streak-pill").textContent = "";
-    banner.textContent = `${OOPS[Math.floor(Math.random() * OOPS.length)]}  It was ${nameOf(note)}.`;
+    banner.textContent = `${T().oops[Math.floor(Math.random() * T().oops.length)]}  ${T().itWas(nameOf(note))}`;
     banner.classList.add("bad");
     playWrongBuzz();
     playNoteSound(note.midi, 1.0, 0.4); // let them hear the right pitch
@@ -682,10 +748,8 @@ function endGame() {
 
   $("result-stars").innerHTML =
     [0, 1, 2].map(i => `<span class="${i < stars ? "" : "dim"}">⭐</span>`).join("");
-  $("result-title").textContent =
-    stars === 3 ? "Fantastic!" : stars === 2 ? "Great job!" : stars === 1 ? "Good effort!" : "Keep practicing!";
-  $("result-sub").textContent =
-    `${state.correctCount} / ${lvl.rounds} correct — ${state.score} points`;
+  $("result-title").textContent = T().resultTitles[stars];
+  $("result-sub").textContent = T().resultSub(state.correctCount, lvl.rounds, state.score);
   showScreen("screen-results");
 
   if (stars >= 2) { playFanfare(); burstConfetti(); }
@@ -708,7 +772,28 @@ function burstConfetti() {
 /* =====================================================================
    HOME SCREEN UI
 ===================================================================== */
+/* hint text for a level: generic translated hint, or its note names */
+function levelHint(lvl) {
+  if (lvl.hint !== "notes") return HINT_I18N[lvl.hint][state.lang];
+  const seen = new Set();
+  return lvl.pool.filter(n => !seen.has(n.letter) && seen.add(n.letter)).map(nameOf).join(" – ");
+}
+
 function renderHome() {
+  const t = T();
+  document.documentElement.lang = state.lang;
+  $("tagline").textContent = t.tagline;
+  $("h-instrument").textContent = t.instrument;
+  $("h-naming").textContent = t.naming;
+  $("h-mode").textContent = t.mode;
+  $("h-level").textContent = t.level;
+  $("h-lang").textContent = t.language;
+  $("btn-start").textContent = t.play;
+  $("btn-hear").textContent = t.hear;
+  $("btn-again").textContent = t.again;
+  $("btn-menu").textContent = t.menu;
+  $("solfege-label").textContent = SOLFEGE[state.lang].join(" ");
+
   // instruments
   const irow = $("instrument-row");
   irow.innerHTML = "";
@@ -716,13 +801,27 @@ function renderHome() {
     const inst = INSTRUMENTS[key];
     const b = document.createElement("button");
     b.className = "chip" + (key === state.instrument ? " selected" : "");
-    b.innerHTML = `<span class="emoji">${inst.emoji}</span> ${inst.label}`;
+    b.innerHTML = `<span class="emoji">${inst.emoji}</span> ${inst.label[state.lang]}`;
     b.addEventListener("click", () => { state.instrument = key; state.level = 0; renderHome(); });
     irow.appendChild(b);
   }
   // naming
   document.querySelectorAll("#naming-row .chip").forEach(b => {
     b.classList.toggle("selected", b.dataset.naming === state.naming);
+  });
+  // mode
+  const mrow = $("mode-row");
+  mrow.innerHTML = "";
+  [["practice", t.modePractice], ["quiz", t.modeQuiz]].forEach(([key, [label, desc]]) => {
+    const b = document.createElement("button");
+    b.className = "chip level-chip" + (key === state.mode ? " selected" : "");
+    b.innerHTML = `<span>${label}</span><small>${desc}</small>`;
+    b.addEventListener("click", () => { state.mode = key; savePrefs(); renderHome(); });
+    mrow.appendChild(b);
+  });
+  // language
+  document.querySelectorAll("#lang-row .chip").forEach(b => {
+    b.classList.toggle("selected", b.dataset.lang === state.lang);
   });
   // levels
   const lrow = $("level-row");
@@ -731,7 +830,7 @@ function renderHome() {
     const stars = store.stars(state.instrument, i);
     const b = document.createElement("button");
     b.className = "chip level-chip" + (i === state.level ? " selected" : "");
-    b.innerHTML = `<span>${i + 1}. ${lvl.name}</span><small>${lvl.hint}</small>` +
+    b.innerHTML = `<span>${i + 1}. ${LEVEL_I18N[lvl.name][state.lang]}</span><small>${levelHint(lvl)}</small>` +
       `<span class="stars">${"⭐".repeat(stars)}${"☆".repeat(3 - stars)}</span>`;
     b.addEventListener("click", () => { state.level = i; renderHome(); });
     lrow.appendChild(b);
@@ -740,6 +839,9 @@ function renderHome() {
 
 document.querySelectorAll("#naming-row .chip").forEach(b => {
   b.addEventListener("click", () => { state.naming = b.dataset.naming; savePrefs(); renderHome(); });
+});
+document.querySelectorAll("#lang-row .chip").forEach(b => {
+  b.addEventListener("click", () => { state.lang = b.dataset.lang; savePrefs(); renderHome(); });
 });
 $("btn-start").addEventListener("click", () => { ctx(); startGame(); });
 $("btn-quit").addEventListener("click", () => showScreen("screen-home"));
