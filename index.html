@@ -285,7 +285,7 @@ const state = {
   level: 0,
   // in-round:
   round: 0, score: 0, streak: 0, correctCount: 0, current: null, prevMidi: null,
-  locked: false,
+  locked: false, bag: [],
 };
 
 const store = {
@@ -295,6 +295,21 @@ const store = {
   setStars(instr, lvl, s) {
     this.data[instr] = this.data[instr] || {};
     this.data[instr][lvl] = Math.max(this.data[instr][lvl] || 0, s);
+    localStorage.setItem(this.key, JSON.stringify(this.data));
+  },
+};
+
+/* Per-note practice weights (adaptive difficulty). A miss raises a note's
+   weight so it gets extra copies in upcoming shuffle bags; correct answers
+   slowly decay it back to 1. Persisted per instrument. */
+const weightsStore = {
+  key: "noteQuestWeights",
+  data: JSON.parse(localStorage.getItem("noteQuestWeights") || "{}"),
+  get(instr, midi) { return (this.data[instr] || {})[midi] || 1; },
+  bump(instr, midi, good) {
+    this.data[instr] = this.data[instr] || {};
+    const w = this.get(instr, midi);
+    this.data[instr][midi] = good ? Math.max(1, w - 0.5) : Math.min(4, w + 2);
     localStorage.setItem(this.key, JSON.stringify(this.data));
   },
 };
@@ -508,11 +523,39 @@ function currentLevel() { return INSTRUMENTS[state.instrument].levels[state.leve
 function startGame() {
   savePrefs();
   state.round = 0; state.score = 0; state.streak = 0; state.correctCount = 0; state.prevMidi = null;
+  state.bag = [];
   $("score-val").textContent = "0";
   $("streak-pill").textContent = "";
   buildAnswerButtons();
   showScreen("screen-game");
   nextQuestion();
+}
+
+/* Shuffle bag: deal every pool note before any repeats, like a deck of
+   cards. Notes the child has been missing (weight > 1) get extra copies.
+   Shuffled with Fisher-Yates, then patched so no two identical notes sit
+   next to each other and the first deal doesn't repeat the previous note. */
+function buildBag(lvl) {
+  const bag = [];
+  for (const n of lvl.pool) {
+    const copies = Math.min(3, Math.floor(weightsStore.get(state.instrument, n.midi)));
+    for (let c = 0; c < copies; c++) bag.push(n);
+  }
+  for (let i = bag.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [bag[i], bag[j]] = [bag[j], bag[i]];
+  }
+  // break up adjacent duplicates (deals come from the end of the array)
+  for (let i = bag.length - 1; i > 0; i--) {
+    if (bag[i].midi !== bag[i - 1].midi) continue;
+    const k = bag.findIndex(n => n.midi !== bag[i].midi);
+    if (k >= 0) [bag[i - 1], bag[k]] = [bag[k], bag[i - 1]];
+  }
+  // don't open the new bag with the note that just appeared
+  if (bag.length > 1 && state.prevMidi !== null && bag[bag.length - 1].midi === state.prevMidi) {
+    [bag[bag.length - 1], bag[0]] = [bag[0], bag[bag.length - 1]];
+  }
+  return bag;
 }
 
 function nextQuestion() {
@@ -521,10 +564,9 @@ function nextQuestion() {
   state.round++;
   state.locked = false;
 
-  // pick a note ≠ previous, weighted random from pool
-  let note;
-  do { note = lvl.pool[Math.floor(Math.random() * lvl.pool.length)]; }
-  while (lvl.pool.length > 1 && note.midi === state.prevMidi && Math.random() < 0.9);
+  // deal the next note from the shuffle bag (refill when empty)
+  if (state.bag.length === 0) state.bag = buildBag(lvl);
+  const note = state.bag.pop();
   state.prevMidi = note.midi;
   state.current = note;
 
@@ -593,6 +635,7 @@ function answer(letter, btn) {
   });
 
   labelNoteOnStaff(note, good);
+  weightsStore.bump(state.instrument, note.midi, good);
 
   if (good) {
     state.streak++;
