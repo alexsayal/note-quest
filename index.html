@@ -206,10 +206,13 @@ function noteFreq(midi) { return 440 * Math.pow(2, (midi - 69) / 12); }
 function diatonicIndex(n) { return n.octave * 7 + n.letter; }
 
 /* Clefs: symbol, bottom-line note, vertical tweaks for the glyph */
+/* h = glyph height in staff gaps, cy = vertical center offset from the
+   middle line in gaps. Treble overhangs the staff top & bottom, alto is
+   exactly staff-height and centered, bass sits on the upper four lines. */
 const CLEFS = {
-  treble: { sym: "𝄞", bottom: makeNote(2, 4), symSize: 108, symDy: 0.33 },  // E4
-  alto:   { sym: "𝄡", bottom: makeNote(3, 3), symSize: 86,  symDy: 0.50 },  // F3
-  bass:   { sym: "𝄢", bottom: makeNote(4, 2), symSize: 86,  symDy: 0.36 },  // G2
+  treble: { sym: "𝄞", bottom: makeNote(2, 4), h: 7.2, cy: 0    },  // E4
+  alto:   { sym: "𝄡", bottom: makeNote(3, 3), h: 4.0, cy: 0    },  // F3
+  bass:   { sym: "𝄢", bottom: makeNote(4, 2), h: 3.8, cy: -0.1 },  // G2
 };
 
 /* Helper to build note lists succinctly: "E4 F4 G4" */
@@ -419,9 +422,23 @@ function drawStaff(note) {
     el("line", { x1: STAFF.x, x2: STAFF.x + STAFF.w, y1: STAFF.top + i * STAFF.gap, y2: STAFF.top + i * STAFF.gap,
                  stroke: "#7a708e", "stroke-width": 2.5, "stroke-linecap": "round" }, svg);
   }
-  // clef glyph
-  el("text", { x: STAFF.x + 14, y: STAFF.midY + clef.symSize * clef.symDy,
-               "font-size": clef.symSize, fill: "#3a3148" }, svg).textContent = clef.sym;
+  // clef glyph: draw at a reference size, measure its real bounding box,
+  // then scale & translate so it lands exactly where the clef belongs.
+  const glyph = el("text", { x: 0, y: 0, "font-size": 100, fill: "#3a3148" }, svg);
+  glyph.textContent = clef.sym;
+  const bb = glyph.getBBox();
+  if (bb.height > 0) {
+    const scale = (clef.h * STAFF.gap) / bb.height;
+    const targetCx = STAFF.x + 16 + (bb.width * scale) / 2;
+    const targetCy = STAFF.midY + clef.cy * STAFF.gap;
+    const tx = targetCx - (bb.x + bb.width / 2) * scale;
+    const ty = targetCy - (bb.y + bb.height / 2) * scale;
+    glyph.setAttribute("transform", `translate(${tx} ${ty}) scale(${scale})`);
+  } else {
+    // getBBox unavailable (element not rendered): fall back to a sane guess
+    glyph.setAttribute("x", STAFF.x + 14);
+    glyph.setAttribute("y", STAFF.midY + 36);
+  }
 
   if (!note) return;
   const y = noteY(note, clefName);
