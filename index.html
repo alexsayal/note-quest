@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Note Quest 🎻 — Learn to Read Music</title>
+<title>NoteFox Quest 🦊 — Learn to Read Music</title>
 <style>
   :root {
     --bg: #faf6ef;
@@ -128,7 +128,7 @@
 
 <!-- ============ HOME SCREEN ============ -->
 <div class="screen active" id="screen-home">
-  <h1 class="logo">🎻 Note Quest</h1>
+  <h1 class="logo">🦊 NoteFox Quest</h1>
   <p class="tagline" id="tagline"></p>
 
   <div class="panel">
@@ -352,9 +352,20 @@ const state = {
   locked: false, bag: [],
 };
 
+// one-time migration from the app's old name (Note Quest)
+for (const [oldKey, newKey] of [
+  ["noteQuestProgress", "noteFoxProgress"],
+  ["noteQuestWeights", "noteFoxWeights"],
+  ["noteQuestPrefs", "noteFoxPrefs"],
+]) {
+  if (!localStorage.getItem(newKey) && localStorage.getItem(oldKey)) {
+    localStorage.setItem(newKey, localStorage.getItem(oldKey));
+  }
+}
+
 const store = {
-  key: "noteQuestProgress",
-  data: JSON.parse(localStorage.getItem("noteQuestProgress") || "{}"),
+  key: "noteFoxProgress",
+  data: JSON.parse(localStorage.getItem("noteFoxProgress") || "{}"),
   stars(instr, lvl) { return (this.data[instr] || {})[lvl] || 0; },
   setStars(instr, lvl, s) {
     this.data[instr] = this.data[instr] || {};
@@ -367,8 +378,8 @@ const store = {
    weight so it gets extra copies in upcoming shuffle bags; correct answers
    slowly decay it back to 1. Persisted per instrument. */
 const weightsStore = {
-  key: "noteQuestWeights",
-  data: JSON.parse(localStorage.getItem("noteQuestWeights") || "{}"),
+  key: "noteFoxWeights",
+  data: JSON.parse(localStorage.getItem("noteFoxWeights") || "{}"),
   get(instr, midi) { return (this.data[instr] || {})[midi] || 1; },
   bump(instr, midi, good) {
     this.data[instr] = this.data[instr] || {};
@@ -380,14 +391,14 @@ const weightsStore = {
 
 // remember last choices
 try {
-  const prefs = JSON.parse(localStorage.getItem("noteQuestPrefs") || "{}");
+  const prefs = JSON.parse(localStorage.getItem("noteFoxPrefs") || "{}");
   if (INSTRUMENTS[prefs.instrument]) state.instrument = prefs.instrument;
   if (prefs.naming === "solfege" || prefs.naming === "letters") state.naming = prefs.naming;
   if (prefs.mode === "practice" || prefs.mode === "quiz") state.mode = prefs.mode;
   if (prefs.lang === "en" || prefs.lang === "pt") state.lang = prefs.lang;
 } catch (e) {}
 function savePrefs() {
-  localStorage.setItem("noteQuestPrefs", JSON.stringify(
+  localStorage.setItem("noteFoxPrefs", JSON.stringify(
     { instrument: state.instrument, naming: state.naming, mode: state.mode, lang: state.lang }));
 }
 

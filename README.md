@@ -1,13 +1,13 @@
-# 🎻 Note Quest
+# 🦊 NoteFox Quest
 
 A game-like web app for children learning to read music notes, violin-first but generalized to other instruments and clefs.
 
 ## Run it
 
-No build, no dependencies — just open `index.html` in any browser, or serve it:
+No build, no dependencies — just open `index.html` in any browser, or serve it from the project folder:
 
 ```sh
-python3 -m http.server 8765 --directory note-quest
+python3 -m http.server 8765
 ```
 
 ## Features
